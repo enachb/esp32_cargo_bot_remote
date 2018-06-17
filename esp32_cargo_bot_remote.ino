@@ -3,7 +3,7 @@
 #include <RF24.h>
 #include <RF24_config.h>
 
-#include <Math.h>
+#include <math.h>
 #include "Wire.h"
 //#include "WiiChuckClass.h" //most likely its WiiChuck.h for the rest of us.
 #include "WiiChuck.h"
@@ -102,7 +102,7 @@ void loop() {
 
   steering(
     mapFloat(chuck.readJoyY(), -100, 100, -1, 1),
-    mapFloat(chuck.readJoyX(), -100, 100, -1, 1)
+    mapFloat(chuck.readJoyX(), 100, -100, -1, 1)
   );
 
   if (count % 10 == 0) {
