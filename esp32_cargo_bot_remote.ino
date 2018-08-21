@@ -8,6 +8,9 @@
 //#include "WiiChuckClass.h" //most likely its WiiChuck.h for the rest of us.
 #include "WiiChuck.h"
 
+//#define MAXSPEED              1000
+#define MAXSPEED              500
+
 #define FILTER              0.1
 #define SPEED_COEFFICIENT   0.5
 #define STEER_COEFFICIENT   0.5
@@ -92,8 +95,8 @@ void steering(float x, float y) {
   left = max(-1, min(left, 1));
   right = max(-1, min(right, 1));
 
-  metrics.leftMotor = mapFloat(left, -1, 1, -1000, 1000);
-  metrics.rightMotor = mapFloat(right, -1, 1, -1000, 1000);
+  metrics.leftMotor = mapFloat(left, -1, 1, -MAXSPEED, MAXSPEED);
+  metrics.rightMotor = mapFloat(right, -1, 1, -MAXSPEED, MAXSPEED);
 }
 
 void loop() {
@@ -102,7 +105,7 @@ void loop() {
 
   steering(
     mapFloat(chuck.readJoyY(), -100, 100, -1, 1),
-    mapFloat(chuck.readJoyX(), 100, -100, -1, 1)
+    mapFloat(-chuck.readJoyX(), 100, -100, -1, 1)
   );
 
   if (count % 10 == 0) {
