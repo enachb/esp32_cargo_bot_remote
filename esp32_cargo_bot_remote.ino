@@ -8,8 +8,8 @@
 //#include "WiiChuckClass.h" //most likely its WiiChuck.h for the rest of us.
 #include "WiiChuck.h"
 
-//#define MAXSPEED              1000
-#define MAXSPEED              500
+#define MAXSPEED              1000
+//#define MAXSPEED              500
 
 #define FILTER              0.1
 #define SPEED_COEFFICIENT   0.5
@@ -31,7 +31,7 @@ WiiChuck chuck = WiiChuck();
 
 struct metricsStruct {
   int16_t leftMotor;
-  int16_t rightMotor;  
+  int16_t rightMotor;
 };
 
 metricsStruct metrics = {0, 0};
@@ -43,6 +43,9 @@ RF24 radio(7, 8);
 const uint64_t pipe = 0xABBDABCD71LL;              // Radio pipe addresses for the 2 nodes to communicate.
 
 uint16_t count = 0;
+long currMax = 250;
+
+int current;         // Current state of the button
 
 float mapFloat(float x, float in_min, float in_max, float out_min, float out_max)
 {
@@ -65,6 +68,8 @@ void setup() {
   radio.setDataRate(RF24_250KBPS);
   radio.stopListening();                                  // First, stop listening so we can talk.
   radio.printDetails();                   // Dump the configuration of the rf unit for debugging
+
+  pinMode(13, OUTPUT);
 
 }
 
@@ -95,8 +100,8 @@ void steering(float x, float y) {
   left = max(-1, min(left, 1));
   right = max(-1, min(right, 1));
 
-  metrics.leftMotor = mapFloat(left, -1, 1, -MAXSPEED, MAXSPEED);
-  metrics.rightMotor = mapFloat(right, -1, 1, -MAXSPEED, MAXSPEED);
+  metrics.leftMotor = mapFloat(left, -1, 1, -currMax, currMax);
+  metrics.rightMotor = mapFloat(right, -1, 1, -currMax, currMax);
 }
 
 void loop() {
@@ -116,22 +121,37 @@ void loop() {
     Serial.print(metrics.leftMotor);
     Serial.print(", ");
     Serial.print(metrics.rightMotor);
+    Serial.print(", ");
+    Serial.print(chuck.buttonZ);
+    Serial.print(", ");
+    Serial.print(currMax);
     Serial.println("");
     //  Serial.print(" sizeof: ");
-    //  Serial.print(sizeof(motors));
+    //  Serial.print(sizeof(motors))
     //  Serial.printLN(" ");
     count = 1;
   } else {
     count++;
   }
 
-  // Should be a message for us now
-  //  memcpy(&motors, &buf, sizeof(motors));
-
   // send it
   if (!radio.write(&metrics, sizeof(metrics) )) {
     Serial.println(F("failed."));
   }
 
+  // Set max speed after devouncing button
+  // *************************************
+  current = chuck.buttonZ;
+
+
+
 }
 
+void ledblink(int times, int lengthms, int pinnum) {
+  for (int x = 0; x < times; x++) {
+    digitalWrite(pinnum, HIGH);
+    delay (lengthms);
+    digitalWrite(pinnum, LOW);
+    delay(lengthms);
+  }
+}
