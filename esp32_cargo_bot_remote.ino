@@ -2,6 +2,7 @@
 #include <printf.h>
 #include <RF24.h>
 #include <RF24_config.h>
+#include <EEPROM.h>
 
 #include <math.h>
 #include "Wire.h"
@@ -9,7 +10,7 @@
 #include "WiiChuck.h"
 
 #define MAXSPEED              1000
-//#define MAXSPEED              500
+#define EEPROMADDR             13
 
 #define FILTER              0.1
 #define SPEED_COEFFICIENT   0.5
@@ -71,6 +72,7 @@ void setup() {
 
   pinMode(13, OUTPUT);
 
+  currMax = EEPROMReadlong(EEPROMADDR);
 }
 
 void steering(float x, float y) {
@@ -141,10 +143,52 @@ void loop() {
 
   // Set max speed after devouncing button
   // *************************************
-  current = chuck.buttonZ;
+  long startTime = millis();
+  long endTime = millis();
+  while (chuck.buttonZ) {
+    delay(50);
+    chuck.update();
+    // Long press
+    if (millis() - startTime > 1000) {
+      currMax += 250;
+      // wrap around if we are past max speed
+      if (currMax > MAXSPEED) {
+        currMax = 250;
+      }
+      EEPROMWritelong(EEPROMADDR, currMax);
+      startTime = millis();
+    }
 
+  }
 
+}
 
+void EEPROMWritelong(int address, long value)
+{
+  //Decomposition from a long to 4 bytes by using bitshift.
+  //One = Most significant -> Four = Least significant byte
+  byte four = (value & 0xFF);
+  byte three = ((value >> 8) & 0xFF);
+  byte two = ((value >> 16) & 0xFF);
+  byte one = ((value >> 24) & 0xFF);
+
+  //Write the 4 bytes into the eeprom memory.
+  EEPROM.write(address, four);
+  EEPROM.write(address + 1, three);
+  EEPROM.write(address + 2, two);
+  EEPROM.write(address + 3, one);
+}
+
+long EEPROMReadlong(long address)
+{
+  //Read the 4 bytes from the eeprom memory.
+  long four = EEPROM.read(address);
+  long three = EEPROM.read(address + 1);
+  long two = EEPROM.read(address + 2);
+  long one = EEPROM.read(address + 3);
+
+  //Return the recomposed long by using bitshift.
+  return ((four << 0) & 0xFF) + ((three << 8) & 0xFFFF) + ((two << 16) & 0xFFFFFF) + ((one << 24) & 0xFFFFFFFF);
 }
 
 void ledblink(int times, int lengthms, int pinnum) {
