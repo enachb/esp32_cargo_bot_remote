@@ -150,9 +150,9 @@ void loop() {
     chuck.update();
     // Long press
     if (millis() - startTime > 1000) {
-      currMax += 250;
-      // wrap around if we are past max speed
-      if (currMax > MAXSPEED) {
+      if(currMax == 250){
+        currMax = 1000;
+      } else {
         currMax = 250;
       }
       EEPROMWritelong(EEPROMADDR, currMax);
@@ -199,3 +199,6 @@ void ledblink(int times, int lengthms, int pinnum) {
     delay(lengthms);
   }
 }
+
+
+
