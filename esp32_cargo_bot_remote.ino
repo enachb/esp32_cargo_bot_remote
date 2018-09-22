@@ -16,17 +16,24 @@
 #define SPEED_COEFFICIENT   0.5
 #define STEER_COEFFICIENT   0.5
 
-// ###### BOBBYCAR ######
-// #define FILTER              0.1
-// #define SPEED_COEFFICIENT   -1
-// #define STEER_COEFFICIENT   0
-
-// ###### ARMCHAIR ######
-// #define FILTER              0.05
-// #define SPEED_COEFFICIENT   0.5
-// #define STEER_COEFFICIENT   -0.2
-
 //#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
+
+// TEMP VARIABLES
+float   nMotPremixL;    // Motor (left)  premixed output        (-128..+127)
+float   nMotMixR;    // Motor (right) premixed output        (-128..+127)
+float   nMotMixL;    // Motor (left)  premixed output        (-128..+127)
+float   nMotPremixR;    // Motor (right) premixed output        (-128..+127)
+int     nPivSpeed;      // Pivot Speed                          (-128..+127)
+float   fPivScale;      // Balance scale b/w drive and pivot    (   0..1   )
+
+// CONFIG
+// - fPivYLimt  : The threshold at which the pivot action starts
+//                This threshold is measured in units on the Y-axis
+//                away from the X-axis (Y=0). A greater value will assign
+//                more of the joystick's range to pivot actions.
+//                Allowable range: (0..+127)
+#define fPivYLimit 32.0
+
 
 WiiChuck chuck = WiiChuck();
 
@@ -75,7 +82,7 @@ void setup() {
   currMax = EEPROMReadlong(EEPROMADDR);
 }
 
-void steering(float x, float y) {
+void steering(float nJoyX, float nJoyY) {
   /* Serial.print("  +x ");
     Serial.print(x);
     Serial.print(" +y ");
@@ -83,37 +90,41 @@ void steering(float x, float y) {
     Serial.print(" ");
   */
 
-  // convert to polar
-  float r = sqrt(x * x + y * y);
-  float t = atan2(y, x);
+  // Calculate Drive Turn output due to Joystick X input
+  if (nJoyY >= 0) {
+    // Forward
+    nMotPremixL = (nJoyX >= 0) ? 127.0 : (127.0 + nJoyX);
+    nMotPremixR = (nJoyX >= 0) ? (127.0 - nJoyX) : 127.0;
+  } else {
+    // Reverse
+    nMotPremixL = (nJoyX >= 0) ? (127.0 - nJoyX) : 127.0;
+    nMotPremixR = (nJoyX >= 0) ? 127.0 : (127.0 + nJoyX);
+  }
 
-  // rotate by 45 degrees
-  t += PI / 4;
+  // Scale Drive output due to Joystick Y input (throttle)
+  nMotPremixL = nMotPremixL * nJoyY / 128.0;
+  nMotPremixR = nMotPremixR * nJoyY / 128.0;
 
-  // back to cartesian
-  float left = r * cos(t);
-  float right = r * sin(t);
+  // Now calculate pivot amount
+  // - Strength of pivot (nPivSpeed) based on Joystick X input
+  // - Blending of pivot vs drive (fPivScale) based on Joystick Y input
+  nPivSpeed = nJoyX;
+  fPivScale = (abs(nJoyY) > fPivYLimit) ? 0.0 : (1.0 - abs(nJoyY) / fPivYLimit);
 
-  // rescale the new coords
-  left = left * sqrt(2);
-  right = right * sqrt(2);
+  // Calculate final mix of Drive and Pivot
+  nMotMixL = (1.0 - fPivScale) * nMotPremixL + fPivScale * ( nPivSpeed);
+  nMotMixR = (1.0 - fPivScale) * nMotPremixR + fPivScale * (-nPivSpeed);
 
-  // clamp to -1/+1
-  left = max(-1, min(left, 1));
-  right = max(-1, min(right, 1));
-
-  metrics.leftMotor = mapFloat(left, -1, 1, -currMax, currMax);
-  metrics.rightMotor = mapFloat(right, -1, 1, -currMax, currMax);
+  // Convert to Motor PWM range
+  metrics.leftMotor = mapFloat(nMotMixL, -128, 128, -currMax, currMax);
+  metrics.rightMotor = mapFloat(nMotMixR, -128, 128, -currMax, currMax);
 }
 
 void loop() {
   delay(20);
   chuck.update();
 
-  steering(
-    mapFloat(chuck.readJoyY(), -100, 100, -1, 1),
-    mapFloat(-chuck.readJoyX(), 100, -100, -1, 1)
-  );
+  steering(chuck.readJoyY(), chuck.readJoyX());
 
   if (count % 10 == 0) {
     Serial.print(chuck.readJoyX());
@@ -150,7 +161,7 @@ void loop() {
     chuck.update();
     // Long press
     if (millis() - startTime > 1000) {
-      if(currMax == 250){
+      if (currMax == 250) {
         currMax = 1000;
       } else {
         currMax = 250;
@@ -199,6 +210,5 @@ void ledblink(int times, int lengthms, int pinnum) {
     delay(lengthms);
   }
 }
-
 
 
