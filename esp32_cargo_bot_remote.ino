@@ -32,8 +32,7 @@ float   fPivScale;      // Balance scale b/w drive and pivot    (   0..1   )
 //                away from the X-axis (Y=0). A greater value will assign
 //                more of the joystick's range to pivot actions.
 //                Allowable range: (0..+127)
-#define fPivYLimit 32.0
-
+#define fPivYLimit 25.0
 
 WiiChuck chuck = WiiChuck();
 
@@ -82,13 +81,20 @@ void setup() {
   currMax = EEPROMReadlong(EEPROMADDR);
 }
 
-void steering(float nJoyX, float nJoyY) {
+void steering(float nJoyY, float nJoyX) {
   /* Serial.print("  +x ");
     Serial.print(x);
     Serial.print(" +y ");
     Serial.print(y);
     Serial.print(" ");
   */
+
+  //Switch X axis
+  //nJoX = -nJoyX;
+
+  // scale
+  nJoyX = mapFloat(nJoyX, -110, 110, -127, 127);
+  nJoyY = mapFloat(nJoyY, -110, 110, -127, 127);
 
   // Calculate Drive Turn output due to Joystick X input
   if (nJoyY >= 0) {
@@ -116,8 +122,8 @@ void steering(float nJoyX, float nJoyY) {
   nMotMixR = (1.0 - fPivScale) * nMotPremixR + fPivScale * (-nPivSpeed);
 
   // Convert to Motor PWM range
-  metrics.leftMotor = mapFloat(nMotMixL, -128, 128, -currMax, currMax);
-  metrics.rightMotor = mapFloat(nMotMixR, -128, 128, -currMax, currMax);
+  metrics.leftMotor = mapFloat(nMotMixR, -128, 128, -currMax, currMax);
+  metrics.rightMotor = mapFloat(nMotMixL, -128, 128, -currMax, currMax);
 }
 
 void loop() {
