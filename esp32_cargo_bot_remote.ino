@@ -26,7 +26,7 @@
 // #define SPEED_COEFFICIENT   0.5
 // #define STEER_COEFFICIENT   -0.2
 
-//#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
+#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 
 WiiChuck chuck = WiiChuck();
 
@@ -58,7 +58,7 @@ void setup() {
   Serial.begin(115200);
   Serial.print("Serial init");
   chuck.begin();
-  Serial.print("Nunhcuck init");
+  Serial.print("Nunchuck init");
   chuck.update();
   chuck.calibrateJoy();
 
@@ -75,13 +75,16 @@ void setup() {
   currMax = EEPROMReadlong(EEPROMADDR);
 }
 
-void steering(float x, float y) {
+void steering(float xTmp, float yTmp) {
   /* Serial.print("  +x ");
     Serial.print(x);
     Serial.print(" +y ");
     Serial.print(y);
     Serial.print(" ");
   */
+
+  float x = xTmp;
+  float y = yTmp * mapFloat(abs(x), 0, 1, 1, 0.2 );
 
   // convert to polar
   float r = sqrt(x * x + y * y);
@@ -111,8 +114,12 @@ void loop() {
   chuck.update();
 
   steering(
-    mapFloat(chuck.readJoyY(), -100, 100, -1, 1),
-    mapFloat(-chuck.readJoyX(), 100, -100, -1, 1)
+    mapFloat(
+      constrain(chuck.readJoyY(), -120, 120),
+      -120, 120, -1, 1),
+    mapFloat(
+      constrain(chuck.readJoyX(), -120, 120),
+      -120, 120, -1, 1)
   );
 
   if (count % 10 == 0) {
@@ -150,7 +157,7 @@ void loop() {
     chuck.update();
     // Long press
     if (millis() - startTime > 1000) {
-      if(currMax == 250){
+      if (currMax == 250) {
         currMax = 1000;
       } else {
         currMax = 250;
