@@ -115,11 +115,11 @@ void loop() {
 
   steering(
     mapFloat(
-      constrain(chuck.readJoyY(), -120, 120),
-      -120, 120, -1, 1),
+      constrain(chuck.readJoyY(), -100, 100),
+      -100, 100, -1, 1),
     mapFloat(
-      constrain(chuck.readJoyX(), -120, 120),
-      -120, 120, -1, 1)
+      constrain(chuck.readJoyX(), -100, 100),
+      -100, 100, -1, 1)
   );
 
   if (count % 10 == 0) {
