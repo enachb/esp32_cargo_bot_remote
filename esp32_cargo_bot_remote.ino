@@ -42,9 +42,11 @@ RF24 radio(7, 8);
 
 // Topology
 const uint64_t pipe = 0xABBDABCD71LL;              // Radio pipe addresses for the 2 nodes to communicate.
+const int CURRMIN = 300;
+const float MINSTEERING = 0.1;
 
 uint16_t count = 0;
-long currMax = 250;
+long currMax = CURRMIN;
 
 int current;         // Current state of the button
 
@@ -72,7 +74,8 @@ void setup() {
 
   pinMode(13, OUTPUT);
 
-  currMax = EEPROMReadlong(EEPROMADDR);
+  //currMax = EEPROMReadlong(EEPROMADDR);
+  currMax = CURRMIN;
 }
 
 void steering(float xTmp, float yTmp) {
@@ -84,7 +87,7 @@ void steering(float xTmp, float yTmp) {
   */
 
   float x = xTmp;
-  float y = yTmp * mapFloat(abs(x), 0, 1, 1, 0.2 );
+  float y = yTmp * mapFloat(abs(x), 0, 1, 1, MINSTEERING );
 
   // convert to polar
   float r = sqrt(x * x + y * y);
@@ -157,10 +160,10 @@ void loop() {
     chuck.update();
     // Long press
     if (millis() - startTime > 1000) {
-      if (currMax == 250) {
+      if (currMax == CURRMIN) {
         currMax = 1000;
       } else {
-        currMax = 250;
+        currMax = CURRMIN;
       }
       EEPROMWritelong(EEPROMADDR, currMax);
       startTime = millis();
