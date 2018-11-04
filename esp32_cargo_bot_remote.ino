@@ -9,22 +9,13 @@
 //#include "WiiChuckClass.h" //most likely its WiiChuck.h for the rest of us.
 #include "WiiChuck.h"
 
-#define MAXSPEED              1000
-#define EEPROMADDR             13
+#define EEPROMADDR        13
+#define MINSPEED          50
+#define MAXSPEED        1000
+#define MINSTEERING      0.1
 
-#define FILTER              0.1
-#define SPEED_COEFFICIENT   0.5
-#define STEER_COEFFICIENT   0.5
-
-// ###### BOBBYCAR ######
-// #define FILTER              0.1
-// #define SPEED_COEFFICIENT   -1
-// #define STEER_COEFFICIENT   0
-
-// ###### ARMCHAIR ######
-// #define FILTER              0.05
-// #define SPEED_COEFFICIENT   0.5
-// #define STEER_COEFFICIENT   -0.2
+uint16_t count = 0;
+long currMax = MINSPEED;
 
 #define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 
@@ -42,13 +33,6 @@ RF24 radio(7, 8);
 
 // Topology
 const uint64_t pipe = 0xABBDABCD71LL;              // Radio pipe addresses for the 2 nodes to communicate.
-const int CURRMIN = 300;
-const float MINSTEERING = 0.1;
-
-uint16_t count = 0;
-long currMax = CURRMIN;
-
-int current;         // Current state of the button
 
 float mapFloat(float x, float in_min, float in_max, float out_min, float out_max)
 {
@@ -74,8 +58,7 @@ void setup() {
 
   pinMode(13, OUTPUT);
 
-  //currMax = EEPROMReadlong(EEPROMADDR);
-  currMax = CURRMIN;
+  currMax = EEPROMReadlong(EEPROMADDR);
 }
 
 void steering(float xTmp, float yTmp) {
@@ -151,27 +134,20 @@ void loop() {
     Serial.println(F("failed."));
   }
 
-  // Set max speed after devouncing button
+  // Use buttons to inc/dec speed via the buttons
   // *************************************
-  long startTime = millis();
-  long endTime = millis();
-  while (chuck.buttonZ) {
-    delay(50);
-    chuck.update();
-    // Long press
-    if (millis() - startTime > 1000) {
-      if (currMax == CURRMIN) {
-        currMax = 1000;
-      } else {
-        currMax = CURRMIN;
-      }
-      EEPROMWritelong(EEPROMADDR, currMax);
-      startTime = millis();
-    }
+  if (chuck.buttonZ && currMax > MINSPEED ) {
+    currMax -= 1;
+    EEPROMWritelong(EEPROMADDR, currMax);
+  }
 
+  if (chuck.buttonC && currMax < MAXSPEED) {
+    currMax += 1;
+    EEPROMWritelong(EEPROMADDR, currMax);
   }
 
 }
+
 
 void EEPROMWritelong(int address, long value)
 {
@@ -209,6 +185,4 @@ void ledblink(int times, int lengthms, int pinnum) {
     delay(lengthms);
   }
 }
-
-
 
