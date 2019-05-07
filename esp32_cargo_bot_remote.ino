@@ -29,7 +29,7 @@ struct metricsStruct {
 metricsStruct metrics = {0, 0};
 
 // Hardware configuration: Set up nRF24L01 radio on SPI bus plus pins 7 & 8
-RF24 radio(7, 8);
+RF24 radio(A0, 10);
 
 // Topology
 const uint64_t pipe = 0xABBDABCD71LL;              // Radio pipe addresses for the 2 nodes to communicate.
@@ -37,7 +37,7 @@ const uint64_t pipe = 0xABBDABCD71LL;              // Radio pipe addresses for t
 float mapFloat(float x, float in_min, float in_max, float out_min, float out_max)
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
+ }
 
 void setup() {
   //nunchuck_init();
@@ -49,7 +49,12 @@ void setup() {
   chuck.calibrateJoy();
 
   radio.begin();
-  radio.setChannel(45);
+  // enachb
+  //radio.setChannel(45);
+
+  // jerome
+  radio.setChannel(70);
+
   radio.openWritingPipe(pipe);        // Both radios listen on the same pipes by default, and switch when writing
   radio.setPALevel(RF24_PA_MAX);
   radio.setDataRate(RF24_250KBPS);
@@ -91,8 +96,8 @@ void steering(float xTmp, float yTmp) {
   left = max(-1, min(left, 1));
   right = max(-1, min(right, 1));
 
-  metrics.leftMotor = mapFloat(left, -1, 1, -currMax, currMax);
-  metrics.rightMotor = mapFloat(right, -1, 1, -currMax, currMax);
+  metrics.rightMotor = mapFloat(-left, -1, 1, -currMax, currMax);
+  metrics.leftMotor = mapFloat(-right, -1, 1, -currMax, currMax);
 }
 
 void loop() {
