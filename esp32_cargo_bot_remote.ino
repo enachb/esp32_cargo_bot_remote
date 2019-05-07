@@ -29,7 +29,10 @@ struct metricsStruct {
 metricsStruct metrics = {0, 0};
 
 // Hardware configuration: Set up nRF24L01 radio on SPI bus plus pins 7 & 8
-RF24 radio(7, 8);
+//RF24 radio(7, 8);
+
+// params for new nrf24 board
+RF24 radio(A0, 10);
 
 // Topology
 const uint64_t pipe = 0xABBDABCD71LL;              // Radio pipe addresses for the 2 nodes to communicate.
